@@ -1,5 +1,7 @@
 //Mensajes de Sockets
 
+const { usuarioConectado, usuarioDesconectado, grabarMensaje } = require('../controllers/socket');
+const { comprobarJWT } = require('../helpers/jwt');
 const {io} = require('../index');
 
 
@@ -7,42 +9,44 @@ const {io} = require('../index');
 
 
 
-io.on('connection', client => {
+
+io.on('connection', (client) => {
     console.log('Cliente conectado');
-    client.on('disconnect', () => { console.log('Cliente desconectado') });
+   
 
-  // client.emit('active-bands', bands.getBands ());
+   
 
-    // client.on('mensaje', (payload)=>{
-    //   console.log('mensajeeee',payload);
+    const [valido, uid] = comprobarJWT(client.handshake.headers['x-token']);
 
-    //   io.emit('mensaje',{admin: ' nuevo mensaje'});
+    if (!valido) { 
+      return client.disconnect();
+    }
 
-    // });
-    // client.on('emitir-mensaje', payload => {
-    //   io.emit('nuevo-mensaje', payload);
-    // });
     
-    // client.on('emit-message', (payload) => {
-    //   console.log(payload);
-    //   client.broadcast.emit('emit-message', payload)
-    // })
-    // client.on('vote-band', payload => {
-    //   console.log(payload);
-    //   bands.voteBand(payload.id);
+    usuarioConectado(uid);
+    io.emit('Usuarios-update');
+  
 
-    //   io.emit('active-bands', bands.getBands());
-      
-    // })
+    //ingresar al usuario a una sala en particular jeje
 
-    // client.on('Add-band', payload => {
-    //   const newBand = new Band(payload.name)
-    //   bands.addBand(newBand);
-    //   io.emit('active-bands', bands.getBands());
-    // });
+    client.join(uid);
 
-    // client.on('Delete-band',payload => {
-    //   bands.deleteBand(payload.id);
-    //   io.emit('active-bands', bands.getBands());
-    // })
+    //escuchar mensaje personal
+
+    client.on('mensaje-personal', async(payload) => {
+      //todo: grabar mensaje
+      console.log(payload.to);
+      await grabarMensaje(payload);
+      io.to(payload.to).emit('mensaje-personal', payload);
+    });
+
+ 
+
+
+    client.on('disconnect', () => { 
+      usuarioDesconectado(uid);
+      io.emit('Usuarios-update');
+     });
+
+    
   });

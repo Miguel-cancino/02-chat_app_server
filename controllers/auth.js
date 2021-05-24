@@ -89,6 +89,7 @@ const login = async(req, res = response ) => {
     
  
  }
+ 
 
  const renewToken = async(req, res = response) => {
      const uid = req.uid;
@@ -98,8 +99,8 @@ const login = async(req, res = response ) => {
      const usuarioDb = await Usuario.findById(uid);
     res.json({
         ok: true,
-        uid, 
-        token, usuarioDb
+        usuario: usuarioDb,
+        token
     });
 }
 module.exports = {
